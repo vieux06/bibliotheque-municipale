@@ -1,4 +1,4 @@
-package Modele;
+package model;
 /**
  * Représente un livre dans le catalogue de la bibliothèque.
  * Un livre est une notice bibliographique (titre, auteur, ISBN...).

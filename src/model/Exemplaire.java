@@ -1,4 +1,4 @@
-package Modele;
+package model;
 
 /**
  * Représente un exemplaire physique d'un livre.
@@ -113,5 +113,10 @@ public class Exemplaire {
             "[Exemplaire #%d] \"%s\" | État: %s | Rayon: %d",
             id, livre.getTitre(), etat, numeroRayon
         );
+    }
+
+    public void setDisponible(boolean b) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setDisponible'");
     }
 }
