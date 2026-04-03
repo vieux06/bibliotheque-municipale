@@ -10,6 +10,7 @@ import java.sql.Statement;
  * Fournit une connexion unique et initialise le schéma si nécessaire.
  */
 public class DatabaseManager {
+    private static final String SERVER_URL = "jdbc:mysql://localhost:3306/?useSSL=false&serverTimezone=UTC";
     private static final String DB_URL = "jdbc:mysql://localhost:3306/bibliotheque?useSSL=false&serverTimezone=UTC";
     private static final String USER = "root"; // À adapter selon votre config
     private static final String PASSWORD = ""; // À adapter selon votre config
@@ -20,17 +21,22 @@ public class DatabaseManager {
      * Initialise la connexion si elle n'existe pas.
      */
     public static Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-            } catch (ClassNotFoundException e) {
-                throw new SQLException("Driver MySQL non trouvé", e);
-            }
-            connection = DriverManager.getConnection(DB_URL, USER, PASSWORD);
-            initializeDatabase();
+    if (connection == null || connection.isClosed()) {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("Driver MySQL non trouvé", e);
         }
-        return connection;
+        // Connexion sans DB pour la créer si elle n'existe pas
+        try (Connection tempConn = DriverManager.getConnection(SERVER_URL, USER, PASSWORD);
+             Statement stmt = tempConn.createStatement()) {
+            stmt.execute("CREATE DATABASE IF NOT EXISTS bibliotheque");
+        }
+        connection = DriverManager.getConnection(DB_URL, USER, PASSWORD);
+        initializeDatabase();
     }
+    return connection;
+}
 
     /**
      * Initialise la base de données en exécutant le schéma SQL.
