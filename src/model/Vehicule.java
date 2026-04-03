@@ -1,5 +1,7 @@
 package model;
 
+import db.DatabaseManager;
+import java.sql.*;
 import java.time.LocalDate;
 
 /**
@@ -152,5 +154,81 @@ public class Vehicule {
             "[Vehicule #%d] %s (%s) | État: %s | Annexe: %s | Dernière révision: %s",
             id, immatriculation, modele, etat, annexeActuelle, revision
         );
+    }
+
+    // ── Méthodes CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * Sauvegarde le véhicule en base de données.
+     */
+    public void save() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        if (id == 0) {
+            // Insert
+            String sql = "INSERT INTO vehicule (immatriculation, modele, etat, date_derniere_revision, annexe_actuelle) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, immatriculation);
+                stmt.setString(2, modele);
+                stmt.setString(3, etat.toString());
+                stmt.setString(4, dateDerniereRevision != null ? dateDerniereRevision.toString() : null);
+                stmt.setString(5, annexeActuelle);
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+        } else {
+            // Update
+            String sql = "UPDATE vehicule SET immatriculation=?, modele=?, etat=?, date_derniere_revision=?, annexe_actuelle=? WHERE id=?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, immatriculation);
+                stmt.setString(2, modele);
+                stmt.setString(3, etat.toString());
+                stmt.setString(4, dateDerniereRevision != null ? dateDerniereRevision.toString() : null);
+                stmt.setString(5, annexeActuelle);
+                stmt.setInt(6, id);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Trouve un véhicule par son ID.
+     */
+    public static Vehicule findById(int id) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT * FROM vehicule WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Vehicule vehicule = new Vehicule(
+                    rs.getString("immatriculation"),
+                    rs.getString("modele"),
+                    rs.getString("annexe_actuelle")
+                );
+                vehicule.id = rs.getInt("id");
+                vehicule.etat = Etat.valueOf(rs.getString("etat"));
+                if (rs.getString("date_derniere_revision") != null) {
+                    vehicule.dateDerniereRevision = LocalDate.parse(rs.getString("date_derniere_revision"));
+                }
+                return vehicule;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Supprime le véhicule de la base de données.
+     */
+    public void delete() throws SQLException {
+        if (id == 0) return;
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM vehicule WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
     }
 }

@@ -1,8 +1,10 @@
 package service;
 
+import db.DatabaseManager;
 import model.Exemplaire;
 import model.Membre;
 
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
@@ -125,4 +127,85 @@ public class Emprunt {
     public LocalDate getDateRetourEffective() { return dateRetourEffective; }
 
     public boolean isEstClos() { return estClos; }
+
+    // ── Méthodes CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * Sauvegarde l'emprunt en base de données.
+     */
+    public void save() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        if (id == 0) {
+            // Insert
+            String sql = "INSERT INTO emprunt (membre_id, exemplaire_id, date_emprunt, date_retour_prevue, date_retour_effective, est_clos) VALUES (?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setInt(1, membre.getId());
+                stmt.setInt(2, exemplaire.getId());
+                stmt.setString(3, dateEmprunt.toString());
+                stmt.setString(4, dateRetourPrevue.toString());
+                stmt.setString(5, dateRetourEffective != null ? dateRetourEffective.toString() : null);
+                stmt.setInt(6, estClos ? 1 : 0);
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+        } else {
+            // Update
+            String sql = "UPDATE emprunt SET membre_id=?, exemplaire_id=?, date_emprunt=?, date_retour_prevue=?, date_retour_effective=?, est_clos=? WHERE id=?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, membre.getId());
+                stmt.setInt(2, exemplaire.getId());
+                stmt.setString(3, dateEmprunt.toString());
+                stmt.setString(4, dateRetourPrevue.toString());
+                stmt.setString(5, dateRetourEffective != null ? dateRetourEffective.toString() : null);
+                stmt.setInt(6, estClos ? 1 : 0);
+                stmt.setInt(7, id);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Trouve un emprunt par son ID.
+     */
+    public static Emprunt findById(int id) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT * FROM emprunt WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Membre membre = Membre.findById(rs.getInt("membre_id"));
+                Exemplaire exemplaire = Exemplaire.findById(rs.getInt("exemplaire_id"));
+                Emprunt emprunt = new Emprunt(
+                    rs.getInt("id"),
+                    membre,
+                    exemplaire
+                );
+                emprunt.dateEmprunt = LocalDate.parse(rs.getString("date_emprunt"));
+                emprunt.dateRetourPrevue = LocalDate.parse(rs.getString("date_retour_prevue"));
+                if (rs.getString("date_retour_effective") != null) {
+                    emprunt.dateRetourEffective = LocalDate.parse(rs.getString("date_retour_effective"));
+                }
+                emprunt.estClos = rs.getInt("est_clos") == 1;
+                return emprunt;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Supprime l'emprunt de la base de données.
+     */
+    public void delete() throws SQLException {
+        if (id == 0) return;
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM emprunt WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
+    }
 }

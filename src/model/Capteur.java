@@ -1,5 +1,7 @@
 package model;
 
+import db.DatabaseManager;
+import java.sql.*;
 import java.time.LocalDateTime;
 
 /**
@@ -139,5 +141,79 @@ public class Capteur {
             conditionsOk() ? "OK" : "ALERTE",
             lecture
         );
+    }
+
+    // ── Méthodes CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * Sauvegarde le capteur en base de données.
+     */
+    public void save() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        if (id == 0) {
+            // Insert
+            String sql = "INSERT INTO capteur (emplacement, temperature, humidite, derniere_lecture, actif) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, emplacement);
+                stmt.setDouble(2, temperature);
+                stmt.setDouble(3, humidite);
+                stmt.setString(4, derniereLecture != null ? derniereLecture.toString() : null);
+                stmt.setInt(5, actif ? 1 : 0);
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+        } else {
+            // Update
+            String sql = "UPDATE capteur SET emplacement=?, temperature=?, humidite=?, derniere_lecture=?, actif=? WHERE id=?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, emplacement);
+                stmt.setDouble(2, temperature);
+                stmt.setDouble(3, humidite);
+                stmt.setString(4, derniereLecture != null ? derniereLecture.toString() : null);
+                stmt.setInt(5, actif ? 1 : 0);
+                stmt.setInt(6, id);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Trouve un capteur par son ID.
+     */
+    public static Capteur findById(int id) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT * FROM capteur WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Capteur capteur = new Capteur(rs.getString("emplacement"));
+                capteur.id = rs.getInt("id");
+                capteur.temperature = rs.getDouble("temperature");
+                capteur.humidite = rs.getDouble("humidite");
+                if (rs.getString("derniere_lecture") != null) {
+                    capteur.derniereLecture = LocalDateTime.parse(rs.getString("derniere_lecture"));
+                }
+                capteur.actif = rs.getInt("actif") == 1;
+                return capteur;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Supprime le capteur de la base de données.
+     */
+    public void delete() throws SQLException {
+        if (id == 0) return;
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM capteur WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
     }
 }

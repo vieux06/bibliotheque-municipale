@@ -1,4 +1,8 @@
 package model;
+
+import db.DatabaseManager;
+import java.sql.*;
+
 /**
  * Représente un livre dans le catalogue de la bibliothèque.
  * Un livre est une notice bibliographique (titre, auteur, ISBN...).
@@ -118,5 +122,78 @@ public class Livre {
     @Override
     public int hashCode() {
         return isbn.hashCode();
+    }
+
+    // ── Méthodes CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * Sauvegarde le livre en base de données.
+     */
+    public void save() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        if (id == 0) {
+            // Insert
+            String sql = "INSERT INTO livre (titre, auteur, isbn, genre, annee_publication) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, titre);
+                stmt.setString(2, auteur);
+                stmt.setString(3, isbn);
+                stmt.setString(4, genre);
+                stmt.setInt(5, anneePublication);
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+        } else {
+            // Update
+            String sql = "UPDATE livre SET titre=?, auteur=?, isbn=?, genre=?, annee_publication=? WHERE id=?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, titre);
+                stmt.setString(2, auteur);
+                stmt.setString(3, isbn);
+                stmt.setString(4, genre);
+                stmt.setInt(5, anneePublication);
+                stmt.setInt(6, id);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Trouve un livre par son ID.
+     */
+    public static Livre findById(int id) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT * FROM livre WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new Livre(
+                    rs.getInt("id"),
+                    rs.getString("titre"),
+                    rs.getString("auteur"),
+                    rs.getString("isbn"),
+                    rs.getString("genre"),
+                    rs.getInt("annee_publication")
+                );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Supprime le livre de la base de données.
+     */
+    public void delete() throws SQLException {
+        if (id == 0) return;
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM livre WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
     }
 }

@@ -1,5 +1,8 @@
 package model;
 
+import db.DatabaseManager;
+import java.sql.*;
+
 /**
  * Représente un exemplaire physique d'un livre.
  * Un même livre (même ISBN) peut avoir plusieurs exemplaires en stock.
@@ -86,6 +89,24 @@ public class Exemplaire {
     }
 
     /**
+     * Alias pour compatibilité avec la classe Emprunt.
+     */
+    public boolean isDisponible() {
+        return estDisponible();
+    }
+
+    /**
+     * Modifie la disponibilité de l'exemplaire.
+     */
+    public void setDisponible(boolean disponible) {
+        if (disponible) {
+            marquerDisponible();
+        } else {
+            marquerEmprunte();
+        }
+    }
+
+    /**
      * Marque l'exemplaire comme emprunté.
      * Lève une exception si l'exemplaire n'est pas disponible.
      */
@@ -115,8 +136,71 @@ public class Exemplaire {
         );
     }
 
-    public void setDisponible(boolean b) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setDisponible'");
+    // ── Méthodes CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * Sauvegarde l'exemplaire en base de données.
+     */
+    public void save() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        if (id == 0) {
+            // Insert
+            String sql = "INSERT INTO exemplaire (livre_id, etat, numero_rayon) VALUES (?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setInt(1, livre.getId());
+                stmt.setString(2, etat.toString());
+                stmt.setInt(3, numeroRayon);
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+        } else {
+            // Update
+            String sql = "UPDATE exemplaire SET livre_id=?, etat=?, numero_rayon=? WHERE id=?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, livre.getId());
+                stmt.setString(2, etat.toString());
+                stmt.setInt(3, numeroRayon);
+                stmt.setInt(4, id);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Trouve un exemplaire par son ID.
+     */
+    public static Exemplaire findById(int id) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT * FROM exemplaire WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Livre livre = Livre.findById(rs.getInt("livre_id"));
+                return new Exemplaire(
+                    rs.getInt("id"),
+                    livre,
+                    Etat.valueOf(rs.getString("etat")),
+                    rs.getInt("numero_rayon")
+                );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Supprime l'exemplaire de la base de données.
+     */
+    public void delete() throws SQLException {
+        if (id == 0) return;
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM exemplaire WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
     }
 }

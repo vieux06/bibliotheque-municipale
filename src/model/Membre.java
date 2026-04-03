@@ -1,5 +1,7 @@
 package model;
 
+import db.DatabaseManager;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -170,5 +172,78 @@ public class Membre {
     @Override
     public int hashCode() {
         return email.hashCode();
+    }
+
+    // ── Méthodes CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * Sauvegarde le membre en base de données.
+     */
+    public void save() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        if (id == 0) {
+            // Insert
+            String sql = "INSERT INTO membre (nom, prenom, email, telephone, date_inscription) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, nom);
+                stmt.setString(2, prenom);
+                stmt.setString(3, email);
+                stmt.setString(4, telephone);
+                stmt.setString(5, dateInscription.toString());
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+        } else {
+            // Update
+            String sql = "UPDATE membre SET nom=?, prenom=?, email=?, telephone=?, date_inscription=? WHERE id=?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, nom);
+                stmt.setString(2, prenom);
+                stmt.setString(3, email);
+                stmt.setString(4, telephone);
+                stmt.setString(5, dateInscription.toString());
+                stmt.setInt(6, id);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Trouve un membre par son ID.
+     */
+    public static Membre findById(int id) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT * FROM membre WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new Membre(
+                    rs.getInt("id"),
+                    rs.getString("nom"),
+                    rs.getString("prenom"),
+                    rs.getString("email"),
+                    rs.getString("telephone"),
+                    LocalDate.parse(rs.getString("date_inscription"))
+                );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Supprime le membre de la base de données.
+     */
+    public void delete() throws SQLException {
+        if (id == 0) return;
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM membre WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
     }
 }

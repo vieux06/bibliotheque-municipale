@@ -1,5 +1,7 @@
 package service;
 
+import db.DatabaseManager;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -122,5 +124,33 @@ public class Caisse {
 
     public List<Amende> getAmendesPayees() {
         return new ArrayList<>(amendesPayees); // copie défensive
+    }
+
+    // ── Méthodes DB ──────────────────────────────────────────────────────────
+
+    /**
+     * Charge le solde depuis la base de données.
+     */
+    public void loadSolde() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT solde FROM caisse WHERE id = 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                this.solde = rs.getDouble("solde");
+            }
+        }
+    }
+
+    /**
+     * Sauvegarde le solde en base de données.
+     */
+    public void saveSolde() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "UPDATE caisse SET solde = ? WHERE id = 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDouble(1, solde);
+            stmt.executeUpdate();
+        }
     }
 }

@@ -1,5 +1,7 @@
 package service;
 
+import db.DatabaseManager;
+import java.sql.*;
 import java.time.LocalDate;
 
 /**
@@ -8,6 +10,7 @@ import java.time.LocalDate;
  */
 public class Amende {
 
+    private int id;
     private Emprunt emprunt;
     private long joursRetard;
     private double montant;
@@ -70,4 +73,81 @@ public class Amende {
     public boolean isEstPayee() { return estPayee; }
 
     public LocalDate getDatePaiement() { return datePaiement; }
+
+    // ── Méthodes CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * Sauvegarde l'amende en base de données.
+     */
+    public void save() throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        if (id == 0) {
+            // Insert
+            String sql = "INSERT INTO amende (emprunt_id, jours_retard, montant, est_payee, date_paiement) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setInt(1, emprunt.getId());
+                stmt.setLong(2, joursRetard);
+                stmt.setDouble(3, montant);
+                stmt.setInt(4, estPayee ? 1 : 0);
+                stmt.setString(5, datePaiement != null ? datePaiement.toString() : null);
+                stmt.executeUpdate();
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+        } else {
+            // Update
+            String sql = "UPDATE amende SET emprunt_id=?, jours_retard=?, montant=?, est_payee=?, date_paiement=? WHERE id=?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, emprunt.getId());
+                stmt.setLong(2, joursRetard);
+                stmt.setDouble(3, montant);
+                stmt.setInt(4, estPayee ? 1 : 0);
+                stmt.setString(5, datePaiement != null ? datePaiement.toString() : null);
+                stmt.setInt(6, id);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Trouve une amende par son ID.
+     */
+    public static Amende findById(int id) throws SQLException {
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "SELECT * FROM amende WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Emprunt emprunt = Emprunt.findById(rs.getInt("emprunt_id"));
+                Amende amende = new Amende(
+                    emprunt,
+                    rs.getLong("jours_retard"),
+                    rs.getDouble("montant")
+                );
+                amende.id = rs.getInt("id");
+                amende.estPayee = rs.getInt("est_payee") == 1;
+                if (rs.getString("date_paiement") != null) {
+                    amende.datePaiement = LocalDate.parse(rs.getString("date_paiement"));
+                }
+                return amende;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Supprime l'amende de la base de données.
+     */
+    public void delete() throws SQLException {
+        if (id == 0) return;
+        Connection conn = DatabaseManager.getConnection();
+        String sql = "DELETE FROM amende WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
+    }
 }
