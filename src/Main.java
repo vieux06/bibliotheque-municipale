@@ -20,7 +20,7 @@ public class Main {
             System.out.println("Base de données initialisée.\n");
 
             // Création et sauvegarde d'un livre
-            Livre livre = new Livre("Une si longue lettre", "Mariama Ba", "2723604306", "Roman", 1979);
+            Livre livre = new Livre("Une si longue lettre", "Mariama Ba", "9782723604306", "Roman", 1979);
             livre.save();
             System.out.println("Livre créé : " + livre);
 

@@ -21,6 +21,11 @@ public class DatabaseManager {
      */
     public static Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+            } catch (ClassNotFoundException e) {
+                throw new SQLException("Driver MySQL non trouvé", e);
+            }
             connection = DriverManager.getConnection(DB_URL, USER, PASSWORD);
             initializeDatabase();
         }
@@ -36,11 +41,18 @@ public class DatabaseManager {
             // Pour simplicité, on peut hardcoder ou lire le fichier
             // Ici, on exécute les CREATE TABLE directement
             String[] schemaStatements = {
+                "DROP TABLE IF EXISTS amende;",
+                "DROP TABLE IF EXISTS emprunt;",
+                "DROP TABLE IF EXISTS exemplaire;",
+                "DROP TABLE IF EXISTS livre;",
+                "DROP TABLE IF EXISTS membre;",
+                "DROP TABLE IF EXISTS capteur;",
+                "DROP TABLE IF EXISTS vehicule;",
+                "DROP TABLE IF EXISTS caisse;",
                 "CREATE TABLE IF NOT EXISTS livre (id INT AUTO_INCREMENT PRIMARY KEY, titre VARCHAR(255) NOT NULL, auteur VARCHAR(255) NOT NULL, isbn VARCHAR(13) NOT NULL UNIQUE, genre VARCHAR(100) NOT NULL, annee_publication INT NOT NULL);",
                 "CREATE TABLE IF NOT EXISTS membre (id INT AUTO_INCREMENT PRIMARY KEY, nom VARCHAR(100) NOT NULL, prenom VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE, telephone VARCHAR(20) NOT NULL, date_inscription DATE NOT NULL);",
                 "CREATE TABLE IF NOT EXISTS exemplaire (id INT AUTO_INCREMENT PRIMARY KEY, livre_id INT NOT NULL, etat ENUM('DISPONIBLE', 'EMPRUNTE', 'ABIME', 'PERDU') NOT NULL DEFAULT 'DISPONIBLE', numero_rayon INT NOT NULL, FOREIGN KEY (livre_id) REFERENCES livre(id) ON DELETE CASCADE);",
                 "CREATE TABLE IF NOT EXISTS emprunt (id INT AUTO_INCREMENT PRIMARY KEY, membre_id INT NOT NULL, exemplaire_id INT NOT NULL, date_emprunt DATE NOT NULL, date_retour_prevue DATE NOT NULL, date_retour_effective DATE NULL, est_clos BOOLEAN NOT NULL DEFAULT FALSE, FOREIGN KEY (membre_id) REFERENCES membre(id) ON DELETE CASCADE, FOREIGN KEY (exemplaire_id) REFERENCES exemplaire(id) ON DELETE CASCADE);",
-                "ALTER TABLE emprunt ADD CONSTRAINT IF NOT EXISTS unique_exemplaire_non_clos UNIQUE (exemplaire_id, est_clos);",
                 "CREATE TABLE IF NOT EXISTS amende (id INT AUTO_INCREMENT PRIMARY KEY, emprunt_id INT NOT NULL UNIQUE, jours_retard INT NOT NULL, montant DECIMAL(10,2) NOT NULL, est_payee BOOLEAN NOT NULL DEFAULT FALSE, date_paiement DATE NULL, FOREIGN KEY (emprunt_id) REFERENCES emprunt(id) ON DELETE CASCADE);",
                 "CREATE TABLE IF NOT EXISTS caisse (id INT PRIMARY KEY DEFAULT 1, solde DECIMAL(15,2) NOT NULL DEFAULT 0.00);",
                 "INSERT IGNORE INTO caisse (id, solde) VALUES (1, 0.00);",
