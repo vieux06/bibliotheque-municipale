@@ -61,7 +61,7 @@ public class Emprunt {
      *
      * @return une Amende si retard, null sinon
      */
-    public Amende retourner() {
+    public Amende retourner() throws SQLException {
         if (estClos) {
             throw new IllegalStateException("Cet emprunt est déjà clos.");
         }
@@ -71,6 +71,7 @@ public class Emprunt {
 
         // Remettre l'exemplaire disponible
         exemplaire.setDisponible(true);
+        exemplaire.save();
 
         // Calculer l'amende si retard
         long joursRetard = ChronoUnit.DAYS.between(dateRetourPrevue, dateRetourEffective);
@@ -165,6 +166,9 @@ public class Emprunt {
                 stmt.executeUpdate();
             }
         }
+
+        // Persist the exemplaire status (EMPRUNTÉ/DISPONIBLE) in database.
+        exemplaire.save();
     }
 
     /**
