@@ -40,9 +40,40 @@ CREATE TABLE emprunt (
     date_retour_effective DATE NULL,
     est_clos BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (membre_id) REFERENCES membre(id) ON DELETE CASCADE,
-    FOREIGN KEY (exemplaire_id) REFERENCES exemplaire(id) ON DELETE CASCADE,
-    UNIQUE (exemplaire_id) -- Un exemplaire ne peut être emprunté qu'une fois à la fois
+    FOREIGN KEY (exemplaire_id) REFERENCES exemplaire(id) ON DELETE CASCADE
 );
+
+-- Trigger pour empêcher deux emprunts non clos du même exemplaire
+DELIMITER $$
+CREATE TRIGGER before_emprunt_insert
+BEFORE INSERT ON emprunt
+FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM emprunt
+        WHERE exemplaire_id = NEW.exemplaire_id
+          AND est_clos = FALSE
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Impossible : exemplaire déjà emprunté et non clos';
+    END IF;
+END$$
+
+CREATE TRIGGER before_emprunt_update
+BEFORE UPDATE ON emprunt
+FOR EACH ROW
+BEGIN
+    IF NEW.est_clos = FALSE THEN
+        IF EXISTS (
+            SELECT 1 FROM emprunt
+            WHERE exemplaire_id = NEW.exemplaire_id
+              AND est_clos = FALSE
+              AND id <> NEW.id
+        ) THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Impossible : exemplaire déjà emprunté et non clos';
+        END IF;
+    END IF;
+END$$
+DELIMITER ;
 
 -- Table pour les amendes (liée à emprunt)
 CREATE TABLE amende (
