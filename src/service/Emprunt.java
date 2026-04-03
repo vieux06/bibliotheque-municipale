@@ -32,6 +32,13 @@ public class Emprunt {
      * Constructeur : crée un nouvel emprunt à la date d'aujourd'hui.
      */
     public Emprunt(int id, Membre membre, Exemplaire exemplaire) {
+        this(id, membre, exemplaire, LocalDate.now(), LocalDate.now().plusDays(DUREE_MAX_JOURS));
+    }
+
+    /**
+     * Constructeur : crée un nouvel emprunt avec dates personnalisées (utile pour tests). 
+     */
+    public Emprunt(int id, Membre membre, Exemplaire exemplaire, LocalDate dateEmprunt, LocalDate dateRetourPrevue) {
         if (membre == null) {
             throw new IllegalArgumentException("Le membre ne peut pas être null.");
         }
@@ -42,12 +49,18 @@ public class Emprunt {
             throw new IllegalStateException("L'exemplaire " + exemplaire.getId()
                     + " n'est pas disponible pour un emprunt.");
         }
+        if (dateEmprunt == null || dateRetourPrevue == null) {
+            throw new IllegalArgumentException("Les dates d'emprunt et de retour prévues ne doivent pas être nulles.");
+        }
+        if (dateRetourPrevue.isBefore(dateEmprunt)) {
+            throw new IllegalArgumentException("La date de retour prévue ne peut pas être antérieure à la date d'emprunt.");
+        }
 
         this.id = id;
         this.membre = membre;
         this.exemplaire = exemplaire;
-        this.dateEmprunt = LocalDate.now();
-        this.dateRetourPrevue = this.dateEmprunt.plusDays(DUREE_MAX_JOURS);
+        this.dateEmprunt = dateEmprunt;
+        this.dateRetourPrevue = dateRetourPrevue;
         this.dateRetourEffective = null;
         this.estClos = false;
 
@@ -84,6 +97,19 @@ public class Emprunt {
 
         System.out.println("[EMPRUNT] Retour dans les délais pour " + membre.getNom() + ". Aucune amende.");
         return null;
+    }
+
+    /**
+     * Définit une date de retour prévue (utilisable pour tests). 
+     */
+    public void setDateRetourPrevue(LocalDate dateRetourPrevue) {
+        if (dateRetourPrevue == null) {
+            throw new IllegalArgumentException("La date de retour prévue ne peut pas être nulle.");
+        }
+        if (dateRetourPrevue.isBefore(dateEmprunt)) {
+            throw new IllegalArgumentException("La date de retour prévue ne peut pas être antérieure à la date d'emprunt.");
+        }
+        this.dateRetourPrevue = dateRetourPrevue;
     }
 
     /**

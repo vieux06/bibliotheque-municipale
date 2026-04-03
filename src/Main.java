@@ -10,6 +10,7 @@ import service.Caisse;
 import service.Amende;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 
 public class Main {
     public static void main(String[] args) {
@@ -59,7 +60,7 @@ public class Main {
             membre1.save();
             System.out.println("│ [Membre 1] " + membre1.getPrenom() + " " + membre1.getNom());
 
-            Membre membre2 = new Membre("Sall", "Cheikh", "cheikh.sall@mail.com", "+221 76 123 45 67");
+            Membre membre2 = new Membre("Diouf", "Lamine", "laminediouf@mail.com", "+221 76 123 45 67");
             membre2.save();
             System.out.println("│ [Membre 2] " + membre2.getPrenom() + " " + membre2.getNom());
 
@@ -67,11 +68,25 @@ public class Main {
             Capteur capteur = new Capteur("Salle A - Rayon 3");
             capteur.enregistrerMesure(20.5, 45.0);
             capteur.save();
-            System.out.println("│ [Capteur] Salle A - Rayon 3");
+            System.out.println("│ [Capteur] " + capteur);
+
+            // Simuler alerte de conservation hors seuil
+            System.out.println("\n--- Alerte conservation ---");
+            capteur.enregistrerMesure(20.5, 72.0); // Humidité trop élevée
+            capteur.save();
+            System.out.println("│ ALERTE : " + capteur.getEtatConditions() + "\n");
 
             Vehicule vehicule = new Vehicule("DK-1234-AB", "Renault Kangoo", "Annexe Centre");
             vehicule.save();
-            System.out.println("│ [Véhicule] DK-1234-AB\n");
+            System.out.println("│ [Véhicule] " + vehicule + "\n");
+
+            // Simulation de livraison entre annexes
+            System.out.println("\n--- Livraison entre annexes ---");
+            vehicule.partirEnLivraison("Annexe Sud");
+            System.out.println("│ Véhicule en livraison vers Annexe Sud");
+            vehicule.confirmerArrivee();
+            vehicule.save();
+            System.out.println("│ Véhicule revenu disponible : " + vehicule.getEtat() + " à " + vehicule.getAnnexeActuelle() + "\n");
 
             // ============ SECTION 2 : STOCK & RECHERCHE ============
             System.out.println("┌─ SECTION 2 : Gestion du Stock");
@@ -91,9 +106,9 @@ public class Main {
             // Emprunt via Stock
             Exemplaire exEmprunt = stock.trouverExemplaireDisponible(livre1);
             if (exEmprunt != null) {
-                Emprunt emprunt = new Emprunt(1, membre1, exEmprunt);
+                Emprunt emprunt = new Emprunt(0, membre1, exEmprunt);
                 emprunt.save();
-                System.out.println("│ ✓ Emprunt créé");
+                System.out.println("│  Emprunt créé");
                 System.out.println("│   - Membre : " + membre1.getPrenom());
                 System.out.println("│   - Livre : " + exEmprunt.getLivre().getTitre());
                 System.out.println("│   - Disponible ? " + exEmprunt.isDisponible() + "\n");
@@ -108,12 +123,40 @@ public class Main {
                     amende.save();
                     System.out.println("[ALERTE] Amende générée : " + amende.getMontant() + " FCFA");
                 } else {
-                    System.out.println("│ ✓ Retour sans retard");
+                    System.out.println("│  Retour sans retard");
                 }
                 System.out.println("│   - Disponible après retour ? " + exEmprunt.isDisponible() + "\n");
 
                 System.out.println("--- État après retour ---");
                 afficherEtatSysteme();
+
+                // Boucle de test : emprunt en retard pour générer une amende et mettre à jour la caisse
+                System.out.println("\n--- Scénario d'emprunt en retard (génération d'amende) ---");
+                Exemplaire exRetard = stock.trouverExemplaireDisponible(livre2);
+                if (exRetard != null) {
+                    Emprunt empruntRetard = new Emprunt(
+                            0,
+                            membre2,
+                            exRetard,
+                            LocalDate.now().minusDays(20),
+                            LocalDate.now().minusDays(6)
+                    );
+                    empruntRetard.save();
+                    System.out.println("│ ✓ Emprunt en retard créé pour " + membre2.getPrenom());
+
+                    Amende amendeRetard = empruntRetard.retourner();
+                    empruntRetard.save();
+                    if (amendeRetard != null) {
+                        amendeRetard.save();
+                        Caisse.getInstance().enregistrerAmende(amendeRetard);
+                        Caisse.getInstance().payerAmende(amendeRetard);
+                        Caisse.getInstance().saveSolde();
+                        System.out.println("│ ✓ Amende payée : " + amendeRetard.getMontant() + " FCFA");
+                    }
+
+                    System.out.println("--- État après emprunt en retard ---");
+                    afficherEtatSysteme();
+                }
             }
 
             // ============ SECTION 4 : TEST CAS D'ERREUR ============
