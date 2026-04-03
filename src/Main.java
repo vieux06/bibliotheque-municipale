@@ -142,7 +142,7 @@ public class Main {
                             LocalDate.now().minusDays(6)
                     );
                     empruntRetard.save();
-                    System.out.println("│ ✓ Emprunt en retard créé pour " + membre2.getPrenom());
+                    System.out.println("│  Emprunt en retard créé pour " + membre2.getPrenom());
 
                     Amende amendeRetard = empruntRetard.retourner();
                     empruntRetard.save();
@@ -151,7 +151,7 @@ public class Main {
                         Caisse.getInstance().enregistrerAmende(amendeRetard);
                         Caisse.getInstance().payerAmende(amendeRetard);
                         Caisse.getInstance().saveSolde();
-                        System.out.println("│ ✓ Amende payée : " + amendeRetard.getMontant() + " FCFA");
+                        System.out.println("│  Amende payée : " + amendeRetard.getMontant() + " FCFA");
                     }
 
                     System.out.println("--- État après emprunt en retard ---");
