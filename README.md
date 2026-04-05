@@ -31,14 +31,21 @@ java -cp "out;lib\mysql-connector-j-9.6.0.jar" Main
 
 ## Structure du projet
 
-src/
-├── db/DatabaseManager.java
-├── model/Livre.java, Membre.java, Exemplaire.java, Stock.java, Capteur.java, Vehicule.java
-├── service/Emprunt.java, Amende.java, Caisse.java
-└── Main.java
-lib/mysql-connector-j-9.6.0.jar
+├── src/ 
+│   ├── db/DatabaseManager.java 
+│   ├── model/Livre.java, Membre.java, Exemplaire.java 
+│   ├── model/Stock.java, Capteur.java, Vehicule.java 
+│   ├── service/Emprunt.java, Amende.java, Caisse.java 
+│   └── Main.java 
+├── lib/mysql-connector-j-9.6.0.jar 
+├── diagramme_UML.png 
+├── rapport_bibliotheque_municipale.pdf 
+├── README.md 
+└── schema.sql 
+
 
 ## Auteurs
 
 - Vieux Dame LEYE
 - Seydina Mouhamadou Lamine DIOUF
+- Mouhamadou Mansour Ndiaye
