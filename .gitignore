@@ -3,3 +3,6 @@ out/
 
 # Ignorer tous les fichiers .class
 *.class
+out/Main.class
+out/db/DatabaseManager.class
+out/service/Emprunt.class
