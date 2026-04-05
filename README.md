@@ -1,8 +1,32 @@
-# bibliotheque-municipale
-Projet Java — Système de Gestion d'une Bibliothèque Municipale
+# Bibliothèque Municipale
 
-Pour compiler sur l'invite de commande (CMD), on se met sur le dossier bibliotheque-principale et on execute la commande: 
+Système de Gestion d'une Bibliothèque Municipale — Projet Java POO  
+DUT-INFO2 GLSI — École Supérieure Polytechnique (ESP), UCAD, Dakar
 
-javac -cp "lib\mysql-connector-j-9.6.0.jar" -d out src\db\DatabaseManager.java src\model\Livre.java src\model\Membre.java src\model\Exemplaire.java src\model\Capteur.java src\model\Vehicule.java src\model\Stock.java src\service\Amende.java src\service\Caisse.java src\service\Emprunt.java src\Main.jav
+## Fonctionnalités
 
-puis la commande ci-apres pour executer: java -cp "out;lib\mysql-connector-j-9.6.0.jar" Main
+- Gestion du catalogue de livres et des exemplaires
+- Inscription et gestion des membres (max 3 emprunts simultanés)
+- Gestion des emprunts avec calcul automatique des amendes (100 FCFA/jour)
+- Caisse centralisée (Singleton) pour le traitement des paiements
+- Surveillance des conditions de conservation (température, humidité)
+- Gestion d'un véhicule pour les livraisons entre annexes
+- Persistance complète en base de données MySQL
+
+## Prérequis
+
+- JDK 21 LTS
+- XAMPP avec MySQL démarré
+- Base de données `bibliotheque` créée dans phpMyAdmin
+
+## Compilation
+```bash
+javac -cp "lib\mysql-connector-j-9.6.0.jar" -d out src\db\DatabaseManager.java src\model\*.java src\service\*.java src\Main.java
+```
+
+## Exécution
+```bash
+java -cp "out;lib\mysql-connector-j-9.6.0.jar" Main
+```
+
+## Structure du projet
