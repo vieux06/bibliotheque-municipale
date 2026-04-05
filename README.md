@@ -1,7 +1,7 @@
 # Bibliothèque Municipale
 
 Système de Gestion d'une Bibliothèque Municipale — Projet Java POO  
-DUT-INFO2 GLSI — École Supérieure Polytechnique (ESP), UCAD, Dakar
+DST-INFO2 GLSI — École Supérieure Polytechnique (ESP), UCAD, Dakar
 
 ## Fonctionnalités
 
