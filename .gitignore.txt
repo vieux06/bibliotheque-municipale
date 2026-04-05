@@ -1,5 +1,0 @@
-# Ignorer le dossier de compilation
-out/
-
-# Ignorer tous les fichiers .class
-*.class
